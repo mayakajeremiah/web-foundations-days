@@ -1,292 +1,233 @@
 /* =========================
-   RESET
+   GENERAL STYLES
 ========================= */
 
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
-
-
-/* =========================
-   BASE BODY STYLES
-========================= */
 
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    line-height: 1.6;
-    background-color: #f4f6f8;
-    color: #333;
-}
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f4f7fb;
+  color: #333;
+  line-height: 1.6;
+  min-height: 100vh;
 
+  display: flex;
+  flex-direction: column;
+}
 
 /* =========================
    HEADER
 ========================= */
 
 header {
-    background-color: #1f2937;
-    color: white;
-    text-align: center;
-    padding: 30px 20px;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: white;
+  text-align: center;
+  padding: 40px 20px 25px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
 }
 
 header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 8px;
+  font-size: 2.5rem;
+  margin-bottom: 8px;
 }
 
 header p {
-    font-size: 1.1rem;
-    margin-bottom: 20px;
+  font-size: 1.05rem;
+  opacity: 0.9;
 }
-
 
 /* =========================
    NAVIGATION
 ========================= */
 
 nav {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 25px;
+  margin-top: 25px;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: 30px;
 }
 
 nav a {
-    color: white;
-    text-decoration: none;
-    font-weight: bold;
-    padding: 8px 14px;
-    border-radius: 5px;
-    transition: background-color 0.3s ease,
-                transform 0.3s ease;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: 0.3s ease;
 }
 
 nav a:hover {
-    background-color: #374151;
-    transform: translateY(-2px);
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
-
 /* =========================
-   MAIN
+   MAIN CONTENT
 ========================= */
 
 main {
-    max-width: 1000px;
-    margin: 40px auto;
-    padding: 0 20px;
+  width: 90%;
+  max-width: 800px;
+  margin: 40px auto;
+  flex: 1;
 }
-
-main > h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 2rem;
-}
-
-
-/* =========================
-   SECTIONS / CARDS
-========================= */
 
 section {
-    background-color: white;
-    padding: 25px;
-    margin-bottom: 25px;
-    border-radius: 10px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  background-color: white;
+  padding: 30px;
+  margin-bottom: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
-section h3 {
-    margin-bottom: 15px;
+section h2 {
+  color: #1e40af;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
 }
-
-
-/* =========================
-   LISTS
-========================= */
-
-section ol,
-section ul {
-    padding-left: 25px;
-}
-
-section li {
-    margin-bottom: 8px;
-}
-
-
-/* =========================
-   FEATURES GRID
-========================= */
-
-section ul {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px;
-    padding-left: 0;
-    list-style: none;
-}
-
-section ul li {
-    background-color: #f1f5f9;
-    padding: 18px;
-    border-radius: 8px;
-    text-align: center;
-    transition: transform 0.3s ease,
-                box-shadow 0.3s ease;
-}
-
-section ul li:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-}
-
-
-/* =========================
-   TABLE
-========================= */
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-}
-
-th,
-td {
-    border: 1px solid #d1d5db;
-    padding: 12px;
-    text-align: left;
-}
-
-th {
-    background-color: #1f2937;
-    color: white;
-}
-
-tr:nth-child(even) {
-    background-color: #f8fafc;
-}
-
 
 /* =========================
    FORM
 ========================= */
 
-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+#note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-form div {
-    display: flex;
-    flex-direction: column;
+#note-form label {
+  font-weight: bold;
+  color: #444;
 }
 
-label {
-    font-weight: bold;
-    margin-bottom: 5px;
+#note-input {
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid #ccd4df;
+  border-radius: 7px;
+  font-size: 1rem;
+  outline: none;
+  transition: 0.3s ease;
 }
 
-input,
-textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #cbd5e1;
-    border-radius: 5px;
-    font-family: inherit;
-    font-size: 1rem;
+#note-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
-
-textarea {
-    resize: vertical;
-}
-
-input:focus,
-textarea:focus {
-    outline: 2px solid #64748b;
-}
-
-
-/* =========================
-   BUTTON
-========================= */
 
 button {
-    align-self: flex-start;
-    background-color: #1f2937;
-    color: white;
-    border: none;
-    padding: 11px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.3s ease,
-                transform 0.3s ease;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 13px 20px;
+  border-radius: 7px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s ease;
 }
 
 button:hover {
-    background-color: #374151;
-    transform: translateY(-2px);
+  background-color: #1e40af;
+  transform: translateY(-1px);
 }
 
+/* =========================
+   NOTE COUNT
+========================= */
+
+#note-count {
+  color: #666;
+  margin-bottom: 15px;
+}
+
+/* =========================
+   NOTES LIST
+========================= */
+
+#notes-list {
+  list-style: none;
+}
+
+#notes-list li {
+  background-color: #f1f5f9;
+  border-left: 4px solid #2563eb;
+  margin-bottom: 10px;
+  padding: 14px 16px;
+  border-radius: 6px;
+  transition: 0.3s ease;
+}
+
+#notes-list li:hover {
+  background-color: #e2e8f0;
+  transform: translateX(4px);
+}
 
 /* =========================
    FOOTER
 ========================= */
 
 footer {
-    background-color: #1f2937;
-    color: white;
-    text-align: center;
-    padding: 20px;
-    margin-top: 40px;
+  background-color: #172033;
+  color: white;
+  text-align: center;
+  padding: 20px;
+  margin-top: auto;
 }
 
+footer p {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
 
 /* =========================
-   SMALL SCREENS
+   RESPONSIVE DESIGN
 ========================= */
 
 @media (max-width: 600px) {
+  header {
+    padding: 30px 15px 20px;
+  }
 
-    header {
-        padding: 20px 10px;
-    }
+  header h1 {
+    font-size: 2rem;
+  }
 
-    header h1 {
-        font-size: 1.8rem;
-    }
+  header p {
+    font-size: 0.95rem;
+  }
 
-    header p {
-        font-size: 0.95rem;
-    }
+  nav ul {
+    gap: 10px;
+  }
 
-    nav {
-        gap: 10px;
-    }
+  nav a {
+    padding: 7px 12px;
+  }
 
-    nav a {
-        padding: 6px 10px;
-        font-size: 0.9rem;
-    }
+  main {
+    width: 94%;
+    margin: 25px auto;
+  }
 
-    main {
-        margin: 25px auto;
-        padding: 0 12px;
-    }
+  section {
+    padding: 20px;
+  }
 
-    section {
-        padding: 18px;
-    }
+  section h2 {
+    font-size: 1.3rem;
+  }
 
-    th,
-    td {
-        padding: 8px;
-        font-size: 0.9rem;
-    }
+  button {
+    width: 100%;
+  }
 }
