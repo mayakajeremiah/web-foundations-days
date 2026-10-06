@@ -8,13 +8,16 @@
   box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
   font-family: Arial, Helvetica, sans-serif;
   background-color: #f4f7fb;
   color: #333;
   line-height: 1.6;
   min-height: 100vh;
-
   display: flex;
   flex-direction: column;
 }
@@ -80,6 +83,26 @@ main {
   flex: 1;
 }
 
+main > h2 {
+    text-align: center;
+    color: #1d4ed8;
+    margin-bottom: 20px;
+    font-size: 2rem;
+}
+
+main > p {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+
+/* =========================
+   SECTIONS
+   ========================= */
+
 section {
   background-color: white;
   padding: 30px;
@@ -92,6 +115,129 @@ section h2 {
   color: #1e40af;
   margin-bottom: 20px;
   font-size: 1.5rem;
+}
+
+
+section h3 {
+    color: #2563eb;
+    margin-bottom: 15px;
+    font-size: 1.4rem;
+}
+
+/* =========================
+   LISTS
+   ========================= */
+
+section ol,
+section ul {
+    padding-left: 25px;
+}
+
+section li {
+    margin-bottom: 10px;
+}
+
+section li::marker {
+    color: #2563eb;
+    font-weight: bold;
+}
+
+/* =========================
+   TABLE
+   ========================= */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background-color: white;
+}
+
+th,
+td {
+    border: 1px solid #d1d5db;
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #2563eb;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+tr:hover {
+    background-color: #eaf1ff;
+}
+
+/* =========================
+   FEEDBACK FORM
+   ========================= */
+
+form {
+    margin-top: 20px;
+}
+
+form div {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: #374151;
+}
+
+input,
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input:focus,
+textarea:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* =========================
+   BUTTON
+   ========================= */
+
+button {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+    background-color: #1d4ed8;
+    transform: translateY(-2px);
+}
+
+button:active {
+    transform: translateY(0);
 }
 
 /* =========================
@@ -193,9 +339,10 @@ footer p {
    RESPONSIVE DESIGN
 ========================= */
 
-@media (max-width: 600px) {
+/* Tablets */
+@media (max-width: 768px) {
   header {
-    padding: 30px 15px 20px;
+    padding: 25px 15px;
   }
 
   header h1 {
@@ -207,7 +354,7 @@ footer p {
   }
 
   nav ul {
-    gap: 10px;
+    gap: 15px;
   }
 
   nav a {
@@ -217,6 +364,10 @@ footer p {
   main {
     width: 94%;
     margin: 25px auto;
+  }
+
+  main > h2 {
+    font-size: 1.8rem;
   }
 
   section {
@@ -229,5 +380,47 @@ footer p {
 
   button {
     width: 100%;
+  }
+}
+
+/* Mobile Devices */
+@media (max-width: 480px) {
+  header {
+    padding: 20px 10px;
+  }
+
+  header h1 {
+    font-size: 1.7rem;
+  }
+
+  header p {
+    font-size: 0.9rem;
+  }
+
+  nav ul {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  main {
+    width: 96%;
+    margin: 20px auto;
+  }
+
+  main > h2 {
+    font-size: 1.5rem;
+  }
+
+  section {
+    padding: 15px;
+  }
+
+  section h2 {
+    font-size: 1.2rem;
+  }
+
+  button {
+    padding: 10px 15px;
+    font-size: 0.95rem;
   }
 }
