@@ -177,17 +177,19 @@ flowchart TD
 - **CDN:** it serves cached images and retrieves uncached images from object storage. Private images should use authorized or signed delivery URLs.
 - **Reliability:** application servers, workers, and storage should be deployed with health checks, monitoring, retries, and appropriate redundancy. The queue should support a dead-letter queue for jobs that repeatedly fail.
 
-## 7. Components and the Problems They Solve
+## 7. Architecture Components: One-Sentence Summaries
 
-1. **CDN:** Delivers cached photos and thumbnails from locations closer to users, reducing latency and origin-server traffic.
-2. **Load balancer:** Distributes incoming API requests across healthy application servers to avoid overloading one server.
-3. **Application servers:** Handle authentication, photo metadata, follow relationships, upload authorization, feed generation, and other business logic.
-4. **Cache:** Stores frequently accessed feed data and metadata temporarily to reduce repeated database queries and improve response times.
-5. **Primary database:** Stores structured information such as users, follows, photo metadata, captions, and upload status, while handling writes.
-6. **Database read replica:** Serves suitable read queries to reduce load on the primary database and improve read capacity.
-7. **Object storage:** Stores original photos and thumbnails durably and scales independently of the relational database.
-8. **Message queue:** Holds thumbnail-generation jobs until workers can process them, helping absorb traffic spikes and separating uploads from slower image processing.
-9. **Thumbnail worker:** Processes queued jobs to resize images, create thumbnails, and update their storage keys and processing status in the database.
+1. **Users (mobile app/browser):** Users upload photos, request feed data, and view images through the client application.
+2. **Content Delivery Network (CDN):** The CDN serves cached photos and thumbnails from locations closer to viewers, reducing latency and requests to object storage.
+3. **Load balancer:** The load balancer distributes incoming API requests across healthy application servers so that no single server handles all the traffic.
+4. **Application servers:** Application servers authenticate users, validate upload requests, manage photo metadata and permissions, and generate feed responses.
+5. **Cache:** The cache temporarily stores frequently requested feed data and metadata to reduce repeated database queries and improve response time.
+6. **Primary database:** The primary database stores structured records such as users, follows, photo metadata, captions, and processing status, and handles writes.
+7. **Database read replica:** The read replica serves suitable read queries to reduce load on the primary database, while acknowledging that replication can lag behind writes.
+8. **Object storage:** Object storage holds original image files and generated thumbnails separately from the relational database and scales to accommodate large files.
+9. **Message queue:** The message queue durably buffers thumbnail-generation jobs so uploads can finish without waiting for slower background processing.
+10. **Thumbnail workers:** Thumbnail workers consume queued jobs, read originals from object storage, generate smaller images, save them, and update photo metadata.
+11. **Dead-letter queue (DLQ):** The DLQ holds jobs that repeatedly fail so they can be inspected, corrected, and safely replayed instead of being retried indefinitely.
 
 ## 8. Asynchronous Photo Upload and Thumbnail Workflow
 
