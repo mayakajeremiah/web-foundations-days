@@ -113,77 +113,69 @@ Instead, object storage should hold the original images and thumbnails, while th
 
 ## 6. Proposed Architecture Diagram
 
-```text
-                       +------------------+
-                       |      Users       |
-                       | Mobile / Browser |
-                       +--------+---------+
-                                |
-                                v
-                       +------------------+
-                       |       CDN        |
-                       | Cached images    |
-                       +--------+---------+
-                                |
-                     Feed/API requests
-                                |
-                                v
-                       +------------------+
-                       |  Load Balancer   |
-                       +--------+---------+
-                                |
-                  +-------------+-------------+
-                  |             |             |
-                  v             v             v
-             +---------+   +---------+   +---------+
-             | App     |   | App     |   | App     |
-             | Server  |   | Server  |   | Server  |
-             +----+----+   +----+----+   +----+----+
-                  |             |             |
-                  +-------------+-------------+
-                                |
-                     +----------+----------+
-                     |                     |
-                     v                     v
-              +-------------+       +-------------+
-              |    Cache    |       |   Primary   |
-              | Feed /      |       |  Database   |
-              | Metadata    |       +------+------+
-              +-------------+              |
-                                            | Replication
-                                            v
-                                     +-------------+
-                                     | Read Replica|
-                                     +-------------+
+The architecture separates the **synchronous API path** (which should respond quickly) from **asynchronous thumbnail processing** (which can take longer and be retried independently).
 
-Photo upload and thumbnail processing:
+```mermaid
+flowchart TD
+    U[Users: mobile app / browser]
+    CDN[CDN: cached images]
+    LB[Load balancer]
+    A1[Application server 1]
+    A2[Application server 2]
+    A3[Application server 3]
+    C[(Cache: feed and metadata)]
+    DB[(Primary database)]
+    RR[(Read replica)]
+    OS[(Object storage: originals and thumbnails)]
+    Q[[Message queue: thumbnail jobs]]
+    W1[Thumbnail worker 1]
+    W2[Thumbnail worker 2]
+    DLQ[[Dead-letter queue: repeatedly failed jobs]]
 
-  User
-   |
-   v
-  Load Balancer
-   |
-   v
-  App Server ---------> Object Storage
-   |                     Original photo
-   |                     Thumbnail
-   |
-   v
-  Message Queue
-   |
-   v
-  Thumbnail Worker
-   |
-   +-------------------> Object Storage
-   |                      Generated thumbnail
-   |
-   +-------------------> Primary Database
-                          Thumbnail metadata/status
+    U -->|Feed/API requests| LB
+    LB --> A1
+    LB --> A2
+    LB --> A3
+    A1 <--> C
+    A2 <--> C
+    A3 <--> C
+    A1 -->|Writes| DB
+    A2 -->|Writes| DB
+    A3 -->|Writes| DB
+    DB -->|Replication| RR
+    A1 -->|Read queries| RR
+    A2 -->|Read queries| RR
+    A3 -->|Read queries| RR
 
-  CDN serves original photos and thumbnails from object storage.
+    U -->|Fetch image URL| CDN
+    CDN -->|Cache miss| OS
+
+    U -->|1. Request secure upload URL| LB
+    A1 -->|2. Create pending photo record| DB
+    A1 -->|3. Return short-lived upload URL| U
+    U -->|4. Upload original directly| OS
+    A1 -->|5. Verify upload and publish job| Q
+    Q --> W1
+    Q --> W2
+    W1 -->|Read original| OS
+    W2 -->|Read original| OS
+    W1 -->|Write thumbnail| OS
+    W2 -->|Write thumbnail| OS
+    W1 -->|Save thumbnail key and status| DB
+    W2 -->|Save thumbnail key and status| DB
+    W1 -. repeated failures .-> DLQ
+    W2 -. repeated failures .-> DLQ
 ```
 
-The diagram separates the main request-handling path from background thumbnail processing. In a production implementation, the application can issue secure upload URLs so clients upload large files directly to object storage without sending the entire image through an application server.
+### Diagram notes
+
+- **Users** access the API through the load balancer. The load balancer distributes requests across multiple application servers.
+- **Direct upload:** the application issues a short-lived, permission-limited upload URL; the client sends the image bytes directly to object storage.
+- **Message queue:** the application adds a thumbnail job only after the original upload has been verified. The queue buffers bursts and decouples the upload response from image processing.
+- **Thumbnail workers:** multiple workers can consume queued jobs in parallel. They read originals and write thumbnails in object storage, then update the photo record in the primary database.
+- **Database:** the primary database accepts writes; the read replica serves suitable read traffic. Replication can lag, so critical reads immediately after a write may need the primary.
+- **CDN:** it serves cached images and retrieves uncached images from object storage. Private images should use authorized or signed delivery URLs.
+- **Reliability:** application servers, workers, and storage should be deployed with health checks, monitoring, retries, and appropriate redundancy. The queue should support a dead-letter queue for jobs that repeatedly fail.
 
 ## 7. Components and the Problems They Solve
 
@@ -197,20 +189,54 @@ The diagram separates the main request-handling path from background thumbnail p
 8. **Message queue:** Holds thumbnail-generation jobs until workers can process them, helping absorb traffic spikes and separating uploads from slower image processing.
 9. **Thumbnail worker:** Processes queued jobs to resize images, create thumbnails, and update their storage keys and processing status in the database.
 
-## 8. Step-by-Step Photo Upload Flow
+## 8. Asynchronous Photo Upload and Thumbnail Workflow
 
-1. **User selects a photo:** The user chooses an image and submits it through the SnapShare application.
-2. **Request reaches the load balancer:** The load balancer forwards the API request to a healthy application server.
-3. **Application validates the request:** The server checks authentication, upload permissions, file type, file size, and applicable limits.
-4. **Upload destination is prepared:** The application creates a photo record with a pending status and generates a secure, short-lived upload URL or upload authorization.
-5. **Original photo is uploaded:** The client uploads the original image directly to object storage using the authorized destination. This avoids routing large file contents through the application server.
-6. **Upload is confirmed:** The application verifies that the upload completed and that the stored object is valid. The photo metadata and processing status are updated in the database.
-7. **Thumbnail job is queued:** The application publishes a job containing the photo ID and object-storage key to the message queue.
-8. **Worker retrieves the job:** A thumbnail worker consumes the job and downloads or reads the original photo from object storage.
-9. **Thumbnail is generated:** The worker resizes the original image, encodes a smaller thumbnail, and uploads it to object storage.
-10. **Metadata is updated:** The worker records the thumbnail key and marks thumbnail processing as complete. If processing fails, the job can be retried, with a limit and a dead-letter queue for repeated failures.
-11. **Photo becomes available:** Once the original upload and required metadata are ready, the photo can appear in the user's feed according to the application's publishing rules. The thumbnail can be used once processing completes.
-12. **Photo is delivered to viewers:** When followers scroll their feeds, application servers return feed metadata and image URLs. The CDN serves cached images and fetches uncached images from object storage.
+The upload request and thumbnail generation are separate tasks. The user should not have to keep an API request open while the system resizes an image. The API confirms the original upload, queues a job, and returns a response; a background worker creates the thumbnail later.
+
+### 8.1 Upload and queueing
+
+1. **User selects a photo.** The client checks basic constraints, then asks SnapShare to start an upload.
+2. **Request reaches the application.** The load balancer sends the request to a healthy application server. The server authenticates the user and checks upload permissions, file type, file size, and rate limits.
+3. **Create a pending record.** The application creates a photo record in the primary database with a unique photo ID, owner ID, object key, and status such as `upload_pending` or `processing`.
+4. **Issue secure upload permission.** The application returns a short-lived, restricted upload URL (for example, a presigned object-storage URL). It should permit only the intended object and allowed operation.
+5. **Client uploads the original.** The client sends the image directly to object storage. This keeps large file traffic off the application servers.
+6. **Verify the stored object.** The client reports completion, or an object-storage event notifies the application. The application verifies the object exists and checks relevant properties such as size and content type. It must not trust a client completion message without verification.
+7. **Publish a thumbnail job.** After verification, the application publishes a message to the queue. The message should contain identifiers and storage keys, for example:
+
+   ```json
+   {
+     "jobType": "generate_thumbnail",
+     "photoId": "photo_12345",
+     "ownerId": "user_789",
+     "originalKey": "originals/photo_12345",
+     "attempt": 1
+   }
+   ```
+
+   The message contains references to the image, not the image bytes themselves. The queue acknowledges durable acceptance according to its delivery guarantees.
+8. **Respond to the user.** The API returns a success/accepted response indicating that the original was uploaded and thumbnail processing is pending. The interface can show “Photo uploaded — preparing thumbnail.”
+
+### 8.2 Background thumbnail worker
+
+9. **Worker receives the job.** An available thumbnail worker consumes a message from the queue. It should acknowledge the job only after the required processing and database update have succeeded.
+10. **Check the job and original.** The worker validates the message, checks that the photo record exists, and reads the original image from object storage. It checks that the file can be decoded and is within processing limits.
+11. **Generate the thumbnail.** The worker resizes the image to the required dimensions, preserves the intended aspect ratio, and encodes the output in the chosen image format.
+12. **Store the thumbnail.** The worker writes the thumbnail to a deterministic object key such as `thumbnails/photo_12345.webp`. A deterministic key helps retries replace or reuse the same output rather than creating duplicates.
+13. **Update metadata.** The worker updates the photo record with the thumbnail key, processing status `ready`, and completion time. The database update should be idempotent so that processing the same job more than once does not create inconsistent records.
+14. **Acknowledge the message.** After the thumbnail is stored and the metadata update succeeds, the worker acknowledges the queue message so it is removed from normal processing.
+15. **Make the image available.** The feed API can return the original and thumbnail URLs or keys according to the photo's publishing and privacy rules. The CDN serves the thumbnail to viewers and caches it when allowed.
+
+### 8.3 Failures, retries, and duplicate messages
+
+- **Temporary failure:** if object storage or the database is temporarily unavailable, the worker does not acknowledge the message. The queue can redeliver it, preferably with delayed retries and backoff.
+- **Repeated failure:** after a configured retry limit, the job moves to a **dead-letter queue (DLQ)**. Operators can inspect the reason, fix the underlying problem, and replay the job when safe.
+- **Duplicate delivery:** queues may deliver a message more than once. Workers should be idempotent: use the photo ID as a stable job identifier, write to a deterministic thumbnail key, and avoid repeating non-idempotent side effects.
+- **Worker crash:** if a worker crashes before acknowledging the job, the queue makes the job available again after its visibility or lease timeout.
+- **Upload succeeds but queue publishing fails:** the photo should remain in a recoverable state such as `uploaded_processing_pending`. Use a transactional outbox, durable upload-completion event, or scheduled reconciliation process to publish the missing job rather than silently losing the work.
+- **Original upload fails or is abandoned:** mark the upload as failed or expired and clean up incomplete objects and stale pending records using a scheduled cleanup process.
+- **Thumbnail is delayed:** the application should display a processing state or use a suitable fallback image. Do not report thumbnail processing as complete until the worker has stored the output and updated the metadata.
+
+This design lets the application accept uploads without waiting for thumbnail generation. During traffic spikes, jobs wait safely in the queue, and more workers can be added to reduce the backlog. Monitor queue depth, oldest-job age, processing duration, retry counts, DLQ size, and the percentage of thumbnails successfully generated.
 
 ## 9. Scaling and Reliability Considerations
 
